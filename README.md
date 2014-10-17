@@ -1,2 +1,2 @@
-Snake-Online-Multiplayer
-========================
+Snake-Online-Multiplayer-Prototype
+==================================
