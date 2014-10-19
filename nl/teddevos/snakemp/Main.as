@@ -5,7 +5,19 @@ package nl.teddevos.snakemp
 	import nl.teddevos.snakemp.client.Client;
 	import nl.teddevos.snakemp.server.Server;
 	import nl.teddevos.snakemp.client.input.*;
+	import nl.teddevos.snakemp.client.data.SaveData;
 
+	/*
+	 *  NOTES TO SELF:
+	 * 
+	 * keyboard focus bug
+	 * name input
+	 * check server world and client closed
+	 * tcp grow missing
+	 * death bug after second round
+	 * 
+	 */
+	
 	public class Main extends Sprite 
 	{
 		public static var client:Client;
@@ -17,6 +29,8 @@ package nl.teddevos.snakemp
 		{			
 			Key.init(this.stage);
 			Mouse.init(this.stage);
+			
+			SaveData.playerName = "Guy" + (int(Math.random() * 89999) + 10000);
 			
 			client = new Client();
 			addChild(client);

@@ -29,6 +29,11 @@ package nl.teddevos.snakemp.server.network.client
 		
 		public var muted:Boolean = false;
 		
+		public var posX:int;
+		public var posY:int;
+		public var posD:int;
+		public var death:Boolean;
+		
 		public function ClientConnection(s:Socket, id:int) 
 		{
 			socket = s;
@@ -103,6 +108,19 @@ package nl.teddevos.snakemp.server.network.client
 			{
 				loadReady = true;
 			}
+			else if (id == NetworkID.CLIENT_DEATH_TCP)
+			{
+				if (!death)
+				{
+					Main.server.clientManager.sendGameUDPtoAll(NetworkID.SERVER_PLAYER_DEATH_UDP, clientID + "", clientID);
+					Main.server.clientManager.sendTCPtoAll(NetworkID.SERVER_PLAYER_DEATH_TCP, clientID + "", clientID);
+					death = true;
+				}
+			}
+			else if (id == NetworkID.CLIENT_PICKUPREQUEST_TCP)
+			{
+				Main.server.world.checkPickup(clientID, message);
+			}
 		}
 		
 		public function onQuickUDPdata(id:int, message:String):void
@@ -166,6 +184,19 @@ package nl.teddevos.snakemp.server.network.client
 					pingAverage = (pingAverage * 9 + ping) / 10;
 				}
 			}
+		}
+		
+		public function resetVariables():void
+		{
+			ready = 0;
+			loadReady = false;
+			
+			posX = 0;
+			posY = 0;
+			posD = 0;
+			death = false;
+			
+			trace("RESET");
 		}
 	}
 }

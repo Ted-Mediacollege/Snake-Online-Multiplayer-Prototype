@@ -32,6 +32,7 @@ package nl.teddevos.snakemp.server
 			policyManager = null;
 			clientManager.destroy();
 			clientManager = null;
+			endWorld();
 		}
 		
 		public function startWorld():void
@@ -42,8 +43,12 @@ package nl.teddevos.snakemp.server
 		
 		public function endWorld():void
 		{
-			inWorld = false;
-			world = null;
+			if (inWorld)
+			{
+				inWorld = false;
+				world.end();
+				world = null;
+			}
 		}
 		
 		public function tick():void

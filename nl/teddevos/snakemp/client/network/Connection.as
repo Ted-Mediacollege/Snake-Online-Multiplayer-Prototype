@@ -114,9 +114,12 @@ package nl.teddevos.snakemp.client.network
 		
 		public function onRecieveData(e:ProgressEvent):void
 		{
-			var s:String = socketTCP.readUTF();
-			var id:int = parseInt(s.substr(0, 3));
-			Main.client.dispatchEvent(new ServerTCPdataEvent(ServerTCPdataEvent.DATA, id, s.substr(3)));
+			while (socketTCP.bytesAvailable)
+			{
+				var s:String = socketTCP.readUTF();
+				var id:int = parseInt(s.substr(0, 3));
+				Main.client.dispatchEvent(new ServerTCPdataEvent(ServerTCPdataEvent.DATA, id, s.substr(3)));
+			}
 		}
 		
 		public function onQuickData(e:DatagramSocketDataEvent):void
@@ -139,6 +142,10 @@ package nl.teddevos.snakemp.client.network
 					Main.client.world.newGameTime(parseInt(a[0]), parseInt(a[1]));
 				}
 			}
+			else if (id == NetworkID.SERVER_SNAKE_UPDATE)
+			{
+				Main.client.world.newSnakeUpdate(s.substr(3));
+			}
 			else
 			{
 				Main.client.dispatchEvent(new ServerGameDataEvent(ServerGameDataEvent.DATA, id, s.substr(3)));
@@ -152,7 +159,7 @@ package nl.teddevos.snakemp.client.network
 			keepAlive--;
 			if (keepAlive < 0)
 			{
-				keepAlive = 15;
+				keepAlive = 60;
 				sendGameUDP(NetworkID.KEEP_ALIVE, "keep-alive");
 				sendQuickUDP(NetworkID.KEEP_ALIVE, "keep-alive");
 			}

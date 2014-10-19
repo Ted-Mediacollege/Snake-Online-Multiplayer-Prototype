@@ -63,6 +63,8 @@ package nl.teddevos.snakemp.client.gui.screens
 			
 			if (waitTime && Main.client.world.gameTime > startTime)
 			{
+				Main.client.world.gameTime -= startTime;
+				Main.client.world.playing = true;
 				client.switchGui(new GuiScreenGame());
 			}
 			else if (waitTime)
@@ -80,7 +82,10 @@ package nl.teddevos.snakemp.client.gui.screens
 		{
 			if (e.id == NetworkID.SERVER_GAMETIME_START)
 			{
-				startTime = parseFloat(e.data);
+				var a:Array = e.data.split("#");
+				var b:Array = String(a[0]).split(";");
+				
+				startTime = parseFloat(b[0]);
 				waitTime = true;
 			}
 		}

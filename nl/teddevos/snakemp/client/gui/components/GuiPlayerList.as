@@ -12,8 +12,8 @@ package nl.teddevos.snakemp.client.gui.components
 			playerList = new Vector.<GuiPlayerListPlayer>();
 			
 			var text_name:GuiText = new GuiText(0, 0, 20, 0x000000, "left");
-			var text_ping:GuiText = new GuiText(320, 0, 20, 0x000000, "left");
-			var text_ready:GuiText = new GuiText(430, 0, 20, 0x000000, "left");
+			var text_ping:GuiText = new GuiText(520, 0, 20, 0x000000, "left");
+			var text_ready:GuiText = new GuiText(630, 0, 20, 0x000000, "left");
 			
 			text_name.setText("PLAYER");
 			text_ping.setText("PING");
@@ -100,7 +100,7 @@ package nl.teddevos.snakemp.client.gui.components
 			{
 				graphics.lineStyle(0, 0x777777);
 				graphics.beginFill(0x777777, 1);
-				graphics.drawRect(0, 30 + (ov * 45), 500, 40);
+				graphics.drawRect(0, 30 + (ov * 45), 760, 40);
 			}
 		}
 	}

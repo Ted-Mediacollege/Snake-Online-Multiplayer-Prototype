@@ -26,18 +26,18 @@ package nl.teddevos.snakemp.client.gui.components
 			nameText = new GuiText(70, 5, 25, 0xFFFFFF, "left");
 			nameText.setText(playerID + " - " + playerName);
 			addChild(nameText);
-			pingText = new GuiText(320, 5, 25, 0xFFFFFF, "left");
+			pingText = new GuiText(520, 5, 25, 0xFFFFFF, "left");
 			pingText.setText("" + ping + "ms");
 			addChild(pingText);
 			
 			graphics.clear();
 			graphics.lineStyle(0, 0x000000);
 			graphics.beginFill(0x000000, 1);
-			graphics.drawRect(0, 0, 500, 40);
+			graphics.drawRect(0, 0, 760, 40);
 			graphics.beginFill(PlayerColor.getColorForPlayer(playerID));
 			graphics.drawRect(5, 5, 60, 30);
 			graphics.beginFill(r == 0 ? 0xFF0000 : 0x00FF00);
-			graphics.drawRect(450, 5, 30, 30);
+			graphics.drawRect(650, 5, 30, 30);
 		}
 		
 		public function update(p:int, r:int):void
@@ -48,11 +48,11 @@ package nl.teddevos.snakemp.client.gui.components
 			graphics.clear();
 			graphics.lineStyle(0, 0x000000);
 			graphics.beginFill(0x000000, 1);
-			graphics.drawRect(0, 0, 500, 40);
+			graphics.drawRect(0, 0, 760, 40);
 			graphics.beginFill(PlayerColor.getColorForPlayer(playerID));
 			graphics.drawRect(5, 5, 60, 30);
 			graphics.beginFill(r == 0 ? 0xFF0000 : 0x00FF00);
-			graphics.drawRect(450, 5, 30, 30);
+			graphics.drawRect(650, 5, 30, 30);
 			
 			pingText.setText("" + ping + "ms");
 		}
