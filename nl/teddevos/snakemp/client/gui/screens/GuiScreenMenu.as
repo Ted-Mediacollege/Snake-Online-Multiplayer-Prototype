@@ -14,6 +14,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		
 		public function GuiScreenMenu() 
 		{
+			
 		}
 		
 		override public function init():void
@@ -23,20 +24,25 @@ package nl.teddevos.snakemp.client.gui.screens
 			addChild(title);
 			
 			var version:GuiText = new GuiText(730, 770, 15, 0x000000, "center");
-			version.setText("Version 1.0 final");
+			version.setText("Version 1.1 final");
 			addChild(version);
 			
 			var info:GuiText = new GuiText(400, 150, 15, 0x000000, "center");
-			info.setText("Multiplayer ports: 2020 - 2029 UDP and TCP");
+			info.setText("Multiplayer ports: 843, 2020-2030 UDP and TCP");
 			addChild(info);
 			
-			var button_host:GuiButton = new GuiButton(0, 275, 290, 50, 250, 0x555555);
-			button_host.setText("Host", 35, 0xFFFFFF);
+			var button_host:GuiButton = new GuiButton(0, 275, 250, 50, 250, 0x555555);
+			button_host.setText("Host Game", 35, 0xFFFFFF);
 			buttonList.push(button_host);
 			addChild(button_host);
 			
-			var button_join:GuiButton = new GuiButton(1, 275, 365, 50, 250, 0x555555);
-			button_join.setText("Join IP", 35, 0xFFFFFF);
+			var button_list:GuiButton = new GuiButton(2, 275, 335, 50, 250, 0x555555);
+			button_list.setText("Join Game", 35, 0xFFFFFF);
+			buttonList.push(button_list);
+			addChild(button_list);
+			
+			var button_join:GuiButton = new GuiButton(1, 275, 415, 50, 250, 0x555555);
+			button_join.setText("Direct Connect", 35, 0xFFFFFF);
 			buttonList.push(button_join);
 			addChild(button_join);
 			
@@ -47,7 +53,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			graphics.lineStyle(3, 0x000000);
 			graphics.drawRect(275, 565, 250, 40);
 			
-			inputField = new GuiTextInput(280, 565, 30, 0x000000, "left", 15, "a-zA-Z0-9");
+			inputField = new GuiTextInput(280, 565, 30, 0x000000, "left", 15, "a-zA-Z0-9_ ");
 			inputField.setText(SaveData.playerName);
 			addChild(inputField);
 		}
@@ -60,7 +66,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		{ 
 			if (inputField.tf.text.length == 0)
 			{
-				inputField.tf.text = "guy";
+				inputField.tf.text = "guy12345";
 			}
 			SaveData.playerName = inputField.tf.text;
 			
@@ -68,9 +74,13 @@ package nl.teddevos.snakemp.client.gui.screens
 			{
 				client.switchGui(new GuiScreenJoinHosting());
 			}
-			if (b.id == 1)
+			else if (b.id == 1)
 			{
 				client.switchGui(new GuiScreenJoinInput(SaveData.lastIP));
+			}
+			else if (b.id == 2)
+			{
+				client.switchGui(new GuiScreenServerList());
 			}
 		}
 	}

@@ -16,6 +16,9 @@ package nl.teddevos.snakemp.client.world
 		private var time:int;
 		private var ticking:Boolean;
 		public var playing:Boolean;
+		
+		public var oldframes:int;
+		public var currentframes:int;
 		public var frame:int;
 		
 		public var size:int = 80;
@@ -24,6 +27,7 @@ package nl.teddevos.snakemp.client.world
 		
 		public var clientPlayer:ClientPlayer;
 		public var players:Vector.<Player>;
+		public var dead:Vector.<Player>;
 		
 		public var death:Boolean = false;
 		
@@ -33,6 +37,13 @@ package nl.teddevos.snakemp.client.world
 		
 		public var collisionList:Vector.<CollisionCheck>;
 		
+		public var lowestPing:Number = 100000;
+		
+		public var backgroundGraphics:Sprite;
+		public var snakeGraphics:Sprite;
+		public var shadowGraphics:Sprite;
+		public var deadGraphics:Sprite;
+		
 		public function WorldClient() 
 		{
 			gameTime = 0;
@@ -41,12 +52,23 @@ package nl.teddevos.snakemp.client.world
 			playing = false;
 			
 			players = new Vector.<Player>();
+			dead = new Vector.<Player>();
 			collisionList = new Vector.<CollisionCheck>();
 			
 			Main.client.addEventListener(ServerTCPdataEvent.DATA, onTCPdata);
 			Main.client.addEventListener(ServerGameDataEvent.DATA, onGameData);
 			Main.client.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 			Main.client.stage.focus = Main.client;
+			
+			backgroundGraphics = new Sprite();
+			snakeGraphics = new Sprite();
+			shadowGraphics = new Sprite();
+			deadGraphics = new Sprite();
+			
+			addChild(backgroundGraphics);
+			addChild(shadowGraphics);
+			addChild(deadGraphics);
+			addChild(snakeGraphics);
 		}
 		
 		public function tick():void
@@ -60,22 +82,64 @@ package nl.teddevos.snakemp.client.world
 				gameTime += time;
 				
 				var nF:int = int(gameTime / speed);
-				if (nF > frame && playing)
+				if (nF > currentframes && playing)
 				{
 					newFrame = true;
-					frame = nF;
+					currentframes = nF;
+					frame = currentframes + oldframes;
+				}
+			}
+			
+			if (newFrame)
+			{
+				if (currentframes == 100)
+				{
+					oldframes += 100;
+					currentframes -= 100;
+					frame = currentframes + oldframes;
+					gameTime -= 100 * speed;
+					if (speed > 50)
+					{
+						speed -= 3;
+					}
 				}
 			}
 			
 			if (playing)
 			{
-				graphics.clear();
+				backgroundGraphics.graphics.clear();
+				snakeGraphics.graphics.clear();
+				shadowGraphics.graphics.clear();
+				deadGraphics.graphics.clear();
 				
-				graphics.lineStyle(1, 0x000000);
-				graphics.beginFill(0x999999);
-				graphics.drawRect(nextPickupX * blockSize, nextPickupY * blockSize, blockSize, blockSize);
+				backgroundGraphics.graphics.lineStyle(2, 0x000000);
+				backgroundGraphics.graphics.beginFill(0xFFFFFF);
+				backgroundGraphics.graphics.drawRect(0, 0, 800, 800);
 				
-				var l:int = players.length;
+				var l:int = dead.length;
+				for (var de:int = 0; de < l; de++)
+				{
+					deadGraphics.graphics.lineStyle(1, 0x000000, 0.05);
+					deadGraphics.graphics.beginFill(dead[de].color, 0.2);
+					var l66:int = dead[de].parts.length
+					for (var j3:int = 0; j3 < l66; j3++ )
+					{
+						deadGraphics.graphics.drawRect(dead[de].parts[j3].posX * blockSize, dead[de].parts[j3].posY * blockSize, blockSize, blockSize);
+					}
+					deadGraphics.graphics.endFill();
+				}
+				
+				shadowGraphics.graphics.lineStyle(1, 0xBBBBBB);
+				shadowGraphics.graphics.beginFill(0xBBBBBB);
+				
+				snakeGraphics.graphics.lineStyle(1, 0x000000);
+				snakeGraphics.graphics.beginFill((Math.random() * 0xFFFFFF) & 0xFFFFFF);
+				snakeGraphics.graphics.drawRect(nextPickupX * blockSize, nextPickupY * blockSize, blockSize, blockSize);
+				shadowGraphics.graphics.drawRect(nextPickupX * blockSize + 3, nextPickupY * blockSize + 3, blockSize, blockSize);
+				
+				snakeGraphics.graphics.lineStyle(1, 0x000000);
+				
+				l = players.length;
 				for (var i:int = 0; i < l; i++)
 				{
 					if (newFrame)
@@ -83,14 +147,25 @@ package nl.teddevos.snakemp.client.world
 						players[i].moveForward();
 					}
 					
-					graphics.lineStyle(1, 0x000000);
-					graphics.beginFill(players[i].color);
+					if (players[i].posD == 3)
+					{
+						players[i].playerText.x = (players[i].posX * blockSize) - int(0.3 * blockSize);
+						players[i].playerText.y = (players[i].posY * blockSize) + int(0.7 * blockSize);
+					}
+					else
+					{
+						players[i].playerText.x = (players[i].posX * blockSize) + int(1 * blockSize);
+						players[i].playerText.y = (players[i].posY * blockSize) - int(0.5 * blockSize);
+					}
+				
+					snakeGraphics.graphics.beginFill(players[i].color);
 					var l2:int = players[i].parts.length
 					for (var j:int = 0; j < l2; j++ )
 					{
-						graphics.drawRect(players[i].parts[j].posX * blockSize, players[i].parts[j].posY * blockSize, blockSize, blockSize);
+						snakeGraphics.graphics.drawRect(players[i].parts[j].posX * blockSize, players[i].parts[j].posY * blockSize, blockSize, blockSize);
+						shadowGraphics.graphics.drawRect(players[i].parts[j].posX * blockSize + 3, players[i].parts[j].posY * blockSize + 3, blockSize, blockSize);
 					}
-					graphics.endFill();
+					snakeGraphics.graphics.endFill();
 				}
 				
 				if (newFrame && !death)
@@ -105,11 +180,13 @@ package nl.teddevos.snakemp.client.world
 					{
 						death = true;
 						clientPlayer.death = true;
+						removeChild(clientPlayer.playerText);
 						var pl:int = players.length;
 						for (var pi:int = 0; pi < pl; pi++ )
 						{
 							if (players[pi].playerID == clientPlayer.playerID)
 							{
+								dead.push(players[pi]);
 								players.splice(pi, 1);
 								break;
 							}
@@ -136,11 +213,13 @@ package nl.teddevos.snakemp.client.world
 									{
 										death = true;
 										clientPlayer.death = true;
+										removeChild(clientPlayer.playerText);
 										var pl3:int = players.length;
 										for (var pi3:int = 0; pi3 < pl3; pi3++ )
 										{
 											if (players[pi3].playerID == clientPlayer.playerID)
 											{
+												dead.push(players[pi3]);
 												players.splice(pi3, 1);
 												break;
 											}
@@ -180,7 +259,6 @@ package nl.teddevos.snakemp.client.world
 							else if (col2 > -1)
 							{
 								collisionList.push(new CollisionCheck(clientPlayer.posX, clientPlayer.posY, 6 - col2));
-								trace("YUP!", clientPlayer.posX, clientPlayer.posY, 5 - col2);
 							}
 						}
 					}
@@ -188,21 +266,29 @@ package nl.teddevos.snakemp.client.world
 			}
 		}
 		
-		public function newGameTime(t:Number, p:Number):void
+		public function newGameTime(t:Number, time:Number):void
 		{
+			var d:Date = new Date();
+			var p:Number = Number(d.time - time) / 2.0;
+			
 			if (!ticking)
 			{
 				gameTime = t + p;
 				ticking = true;
+				lowestPing = p;
+				gameTimeDifference = p;
 				
-				var d:Date = new Date();
 				time_old = d.time;
 			}
 			else
 			{
-				var diff:Number = gameTime - (t + p);
-				gameTimeDifference = int(Math.abs(diff));
-				gameTime = t + p;
+				if (p < lowestPing)
+				{
+					lowestPing = p;
+					var diff:Number = gameTime - (t + p);
+					gameTimeDifference = int(Math.abs(diff));
+					gameTime = t + p;
+				}
 			}
 		}
 		
@@ -243,12 +329,15 @@ package nl.teddevos.snakemp.client.world
 					var id:int = int(parseInt(d[0]));
 					if (id == Main.client.connection.playerID)
 					{
-						clientPlayer = new ClientPlayer(id, int(parseInt(d[1])), int(parseInt(d[2])), int(parseInt(d[3])), int(parseInt(d[4])));
+						clientPlayer = new ClientPlayer(id, new String(d[1]), int(parseInt(d[2])), int(parseInt(d[3])), int(parseInt(d[4])), int(parseInt(d[5])));
+						addChildAt(clientPlayer.playerText, 2);
 						players.push(clientPlayer);
 					}
 					else
 					{
-						players.push(new Player(id, int(parseInt(d[1])), int(parseInt(d[2])), int(parseInt(d[3])), int(parseInt(d[4]))));
+						var pla:Player = new Player(id, new String(d[1]), int(parseInt(d[2])), int(parseInt(d[3])), int(parseInt(d[4])), int(parseInt(d[5])));
+						addChildAt(pla.playerText, 2);
+						players.push(pla);
 					}
 				}
 			}
@@ -265,6 +354,8 @@ package nl.teddevos.snakemp.client.world
 							death = true;
 							clientPlayer.death = true;
 						}
+						removeChild(players[pi].playerText);
+						dead.push(players[pi]);
 						players.splice(pi, 1);
 						break;
 					}
@@ -329,6 +420,8 @@ package nl.teddevos.snakemp.client.world
 							death = true;
 							clientPlayer.death = true;
 						}
+						removeChild(players[pi].playerText);
+						dead.push(players[pi]);
 						players.splice(pi, 1);
 						break;
 					}

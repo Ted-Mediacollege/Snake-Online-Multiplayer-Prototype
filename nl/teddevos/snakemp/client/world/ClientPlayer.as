@@ -1,5 +1,6 @@
 package nl.teddevos.snakemp.client.world 
 {
+	import nl.teddevos.snakemp.client.gui.components.GuiText;
 	import nl.teddevos.snakemp.Main;
 	import nl.teddevos.snakemp.common.NetworkID;
 	
@@ -8,13 +9,15 @@ package nl.teddevos.snakemp.client.world
 		public var oldDir:int;
 		public var death:Boolean;
 		public var latestGrow:int;
+		public var sendDelay:int;
 		
-		public function ClientPlayer(id:int, x:int, y:int, d:int, l:int) 
+		public function ClientPlayer(id:int, n:String, x:int, y:int, d:int, l:int) 
 		{
-			super(id, x, y, d, l);
+			super(id, n, x, y, d, l);
 			oldDir = d;
 			death = false;
 			latestGrow = 0;
+			sendDelay = 60;
 		}
 		
 		override public function moveForward():void
@@ -38,6 +41,13 @@ package nl.teddevos.snakemp.client.world
 				if (oldDir != posD)
 				{
 					oldDir = posD;
+					sendNewSnakeString(0);
+					sendDelay = 60;
+				}
+				
+				sendDelay--;
+				if (sendDelay < 0)
+				{
 					sendNewSnakeString(0);
 				}
 			}

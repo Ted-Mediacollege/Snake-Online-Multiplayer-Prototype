@@ -24,6 +24,11 @@ package nl.teddevos.snakemp.client.input
 			{
 				Main.client.gui.checkButtons(mouseX, mouseY);
 			}
+			
+			if (Main.client.inWorld)
+			{
+				Main.main.stage.focus = Main.client;
+			}
 		}
 		
 		public static function onMouseUp(e:MouseEvent):void

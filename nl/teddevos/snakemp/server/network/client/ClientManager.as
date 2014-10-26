@@ -10,7 +10,9 @@ package nl.teddevos.snakemp.server.network.client
 	import nl.teddevos.snakemp.common.Port;
 	import nl.teddevos.snakemp.server.data.ServerLog;
 	import nl.teddevos.snakemp.Main;
-	import nl.teddevos.snakemp.server.network.ClientTCPdataEvent;
+	import nl.teddevos.snakemp.server.network.ClientTCPdataEvent;	
+	import flash.net.NetworkInfo;
+	import flash.net.NetworkInterface;
 	
 	public class ClientManager 
 	{
@@ -20,7 +22,7 @@ package nl.teddevos.snakemp.server.network.client
 		public var socketUDP_PING:DatagramSocket;
 		
 		private var updateTimer:int = 5;
-		private var countDown:int = 300;
+		private var countDown:int = 150;
 		private var waiting:Boolean = false;
 		private var soloTesting:Boolean = false;
 		
@@ -56,6 +58,24 @@ package nl.teddevos.snakemp.server.network.client
 			ServerLog.addMessage("[NETWORK]: UDP connections are ready!");
 			
 			clients = new Vector.<ClientConnection>();
+			
+			var netInterfaces:Vector.<NetworkInterface> = NetworkInfo.networkInfo.findInterfaces();
+			var l:int = netInterfaces.length;
+			for (var i:int = 0; i < l; i++ )
+			{
+				try
+				{
+					if (netInterfaces[i].addresses[0].address.length > 5)
+					{
+						var b:ByteArray = new ByteArray();
+						b.writeUTF("777" + NetworkID.LOCAL_IP_TEST + "" + netInterfaces[i].addresses[0].address);
+						socketUDP_QUICK.send(b, 0, 0, netInterfaces[i].addresses[0].address, Port.QUICK_UDP_SERVER);
+					}
+				}
+				catch (e:Error)
+				{
+				}
+			}
 		}
 		
 		public function destroy():void
@@ -88,8 +108,8 @@ package nl.teddevos.snakemp.server.network.client
 			else if (clients.length < Settings.MAX_PLAYERS)
 			{
 				var id:int = getNextAvailibleID();
-				b.writeUTF(NetworkID.SERVER_WELCOME + "" + id);
-				clients.push(new ClientConnection(e.socket, id));
+				b.writeUTF(NetworkID.SERVER_WELCOME + "" + id + "#" + Main.server.serverName + "#" + Settings.MAX_PLAYERS);
+				clients.push(new ClientConnection(e.socket, id, getHighestRank()));
 			}
 			else 
 			{
@@ -107,8 +127,20 @@ package nl.teddevos.snakemp.server.network.client
 			if (id == NetworkID.KEEP_ALIVE) { return; }
 			var message:String = s.substr(6);
 			
-			
-			if (GAME)
+			if (PREPARE)
+			{
+				if (id == NetworkID.CLIENT_GAMETIME_REQUEST)
+				{
+					for (var b:int = clients.length - 1; b > -1; b-- )
+					{
+						if (clients[b].clientID == player)
+						{
+							sendGameUDP(clients[b], NetworkID.SERVER_GAMETIME_UPDATE, Main.server.world.gameTime_current + ";" + message);
+						}
+					}
+				}
+			}
+			else if (GAME)
 			{
 				if (id == NetworkID.CLIENT_SNAKE_UPDATE)
 				{
@@ -123,6 +155,7 @@ package nl.teddevos.snakemp.server.network.client
 							sendGameUDPtoAll(NetworkID.SERVER_PLAYER_DEATH_UDP, player + "", player);
 							sendTCPtoAll(NetworkID.SERVER_PLAYER_DEATH_TCP, player + "", player);
 							clients[i].death = true;
+							clients[i].deathFrame = Main.server.world.frame;
 						}
 					}
 				}
@@ -140,6 +173,23 @@ package nl.teddevos.snakemp.server.network.client
 			var id:int = parseInt(s.substr(3, 3));
 			if (id == NetworkID.KEEP_ALIVE) { return; }
 			var message:String = s.substr(6);
+			
+			if (id == NetworkID.LOCAL_IP_TEST) 
+			{ 
+				if (!Main.server.localIPfound)
+				{
+					ServerLog.addMessage("[SERVER]: running on ip " + message);
+					Main.server.localIP = message;
+					Main.server.localIPfound = true;
+				}
+				return; 
+			}
+			else if (id == NetworkID.CLIENT_INFO_REQUEST)
+			{
+				var b:ByteArray = new ByteArray();
+				b.writeUTF(NetworkID.SERVER_INFO_RESPONSE + message + "#" + Main.server.serverName + "#" + clients.length + "#" + Settings.MAX_PLAYERS + "#" + (LOBBY ? "1" : "0"));
+				socketUDP_QUICK.send(b, 0, 0, e.srcAddress, Port.TEST_UDP);
+			}
 			
 			for (var i:int = clients.length - 1; i > -1; i-- )
 			{
@@ -219,7 +269,14 @@ package nl.teddevos.snakemp.server.network.client
 						LOBBY = false;
 						PREPARE = true;
 						updateTimer += 10;
-						
+										
+						for (var lr:int = clients.length - 1; lr > -1; lr-- )
+						{
+							clients[lr].loadReady = false;
+							clients[lr].death = false;
+							clients[lr].score = 0;
+							clients[lr].deathFrame = 0;
+						}
 						
 						if (clients.length < 2)
 						{
@@ -237,11 +294,11 @@ package nl.teddevos.snakemp.server.network.client
 				}
 				else
 				{
-					if (countDown < 300)
+					if (countDown < 150)
 					{
 						ServerLog.addMessage("Countdown interrupted!");
 					}
-					countDown = 300;
+					countDown = 150;
 				}
 			
 				updateTimer--;
@@ -263,7 +320,7 @@ package nl.teddevos.snakemp.server.network.client
 			}
 			else if (PREPARE)
 			{
-				updateTimer--;
+				/*updateTimer--;
 				if (updateTimer < 0)
 				{
 					updateTimer += 10;
@@ -273,18 +330,18 @@ package nl.teddevos.snakemp.server.network.client
 					{
 						sendGameUDP(clients[k], NetworkID.SERVER_GAMETIME_UPDATE, Main.server.world.gameTime_current + ";" + int(clients[k].pingAverage / 2));
 					}
-				}
+				}*/
 				
 				var loaded:Boolean = true;
 				for (var n:int = clients.length - 1; n > -1; n-- )
 				{
-					if (clients[j].loadReady == 0)
+					if (clients[n].loadReady == false)
 					{
 						loaded = false;
 					}
 				}
 				
-				if (!waiting)
+				if (!waiting && loaded)
 				{
 					waiting = true;
 					Main.server.world.startTime = Main.server.world.gameTime_current + 5000;
@@ -296,7 +353,7 @@ package nl.teddevos.snakemp.server.network.client
 						{
 							pString += ";";
 						}
-						pString += clients[m].clientID + "$" + clients[m].posX + "$" + clients[m].posY + "$" + clients[m].posD + "$" + "8";
+						pString += clients[m].clientID + "$" + clients[m].playerName + "$" + clients[m].posX + "$" + clients[m].posY + "$" + clients[m].posD + "$" + "8";
 					}
 					Main.server.clientManager.sendTCPtoAll(NetworkID.SERVER_GAMETIME_START, Main.server.world.startTime + ";" + Settings.SPEED + ";" + Settings.size + "#" + pString);
 				}
@@ -324,9 +381,45 @@ package nl.teddevos.snakemp.server.network.client
 						updateTimer = 5;
 						countDown = 300;
 						waiting = false;
+						soloTesting = false;
 						sendTCPtoAll(NetworkID.SERVER_RETURN);
 						Main.server.endWorld();
 						ServerLog.addMessage("Round ended!");
+						
+						function rank(a:ClientConnection, b:ClientConnection):int
+						{
+							//trace(a.deathFrame, b.deathFrame);
+							if (a.deathFrame > b.deathFrame)
+							{
+								return -1;
+							}
+							else if (a.deathFrame < b.deathFrame)
+							{
+								return 1;
+							}
+							else
+							{
+								return 0;
+							}
+						}
+						
+						var rankedClients:Vector.<ClientConnection> = clients.concat();
+						rankedClients.sort(rank);
+
+						var lll:int = clients.length; 
+						for (var nnn:int = 0; nnn < lll; nnn++ )
+						{
+							clients[nnn].resetVariables();
+							
+							for (var mmm:int = 0; mmm < lll; mmm++ )
+							{
+								if (clients[nnn] == rankedClients[mmm])
+								{
+									clients[nnn].rank = mmm;
+									//trace("client: " + clients[nnn].clientID + " = rank: " + mmm);
+								}
+							}
+						}
 					}
 				}
 				else
@@ -334,17 +427,25 @@ package nl.teddevos.snakemp.server.network.client
 					var xl:int = clients.length;
 					var alive:int = 0;
 					var winName:String = "Nobody";
+					var winID:int = 0;
 					for (var x:int = 0; x < xl; x++)
 					{
 						if (!clients[x].death)
 						{
 							winName = clients[x].playerName;
+							winID = clients[x].clientID;
 							alive += 1;
 						}
 					}
 					
 					if (alive < 1 || (!soloTesting && alive < 2))
 					{
+						if (!soloTesting && alive < 2)
+						{
+							clients[winID].deathFrame = Main.server.world.frame + 2;
+							clients[winID].score += Main.server.world.frame + 2;
+						}
+						
 						ServerLog.addMessage(winName + " won this round!");
 						sendTCPtoAll(NetworkID.SERVER_PREPARE_RETURN, winName);
 						countDown--;
@@ -414,12 +515,13 @@ package nl.teddevos.snakemp.server.network.client
 			var s:String = "";
 			for (var i:int = 0; i < l; i++ )
 			{
-				s += clients[i].playerName + ";" + clients[i].clientID + ";" + int(clients[i].pingAverage) + ";" + clients[i].ready;
+				s += clients[i].playerName + ";" + clients[i].clientID + ";" + int(clients[i].pingAverage) + ";" + clients[i].ready + ";" + clients[i].score + ";" + clients[i].rank;
 				if (i < l - 1)
 				{
 					s += "#";
 				}
 			}
+			
 			return s;
 		}
 		
@@ -446,6 +548,25 @@ package nl.teddevos.snakemp.server.network.client
 				}
 			}
 			return -1;
+		}
+		
+		public function getHighestRank():int
+		{
+			if (clients.length == 0)
+			{
+				return 0;
+			}
+			
+			var highest:int = 0;
+			var l:int = clients.length;
+			for (var p:int = 0; p < l; p++ )
+			{
+				if (clients[p].rank > highest)
+				{
+					highest = clients[p].rank;
+				}
+			}
+			return highest + 1;
 		}
 	}
 }

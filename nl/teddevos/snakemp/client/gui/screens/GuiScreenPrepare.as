@@ -7,21 +7,27 @@ package nl.teddevos.snakemp.client.gui.screens
 	import nl.teddevos.snakemp.common.NetworkID;
 	import nl.teddevos.snakemp.client.network.ServerTCPdataEvent;
 	import nl.teddevos.snakemp.client.network.ServerGameDataEvent;
+	import nl.teddevos.snakemp.common.PlayerColor;
 	
 	public class GuiScreenPrepare extends GuiScreen
 	{
 		private var hosting:Boolean;
 		private var serverinfo:GuiText;
 		private var infoText:GuiText;
+		private var pingText:GuiText;
 		private var ready:Boolean;
 		private var startTime:Number = 1000000;
 		private var waitTime:Boolean;
+		private var maxDifference:Number;
+		private var gametimeSpam:int;
 		
 		public function GuiScreenPrepare(host:Boolean) 
 		{
 			hosting = host;
 			ready = false;
 			waitTime = false;
+			maxDifference = 1;
+			gametimeSpam = 10;
 		}
 		
 		override public function init():void
@@ -30,13 +36,22 @@ package nl.teddevos.snakemp.client.gui.screens
 			client.addEventListener(ServerTCPdataEvent.DATA, onTCPdata);
 			client.addEventListener(ServerGameDataEvent.DATA, onGameData);
 			
-			var title:GuiText = new GuiText(400, 360, 35, 0x000000, "center");
+			var title:GuiText = new GuiText(400, 260, 35, 0x000000, "center");
 			title.setText("Preparing match");
 			addChild(title);
 			
-			infoText = new GuiText(400, 410, 15, 0x000000, "center");
+			infoText = new GuiText(400, 310, 15, 0x000000, "center");
 			infoText.setText("Matching game time...");
 			addChild(infoText);
+			
+			pingText = new GuiText(400, 750, 15, 0x000000, "center");
+			pingText.setText("Lowest ping: 999ms");
+			addChild(pingText);
+			
+			var id:int = client.connection.playerID;
+			var color:GuiText = new GuiText(400, 460, 45, PlayerColor.getColorForPlayer(id), "center");
+			color.setText("You are " + PlayerColor.getColorNameForPlayer(id));
+			addChild(color);
 			
 			if (hosting)
 			{
@@ -48,9 +63,40 @@ package nl.teddevos.snakemp.client.gui.screens
 		
 		override public function tick():void 
 		{ 
+			if (!Main.client.connection.socketTCP.connected)
+			{
+				client.switchGui(new GuiScreenLost("Lost connection to server!"));
+			}
+			
+			pingText.setText("Lowest ping: " + int(Main.client.world.lowestPing) + "ms");
+			
+			gametimeSpam--;
+			if (gametimeSpam < 0)
+			{
+				gametimeSpam += 15;
+				var d:Date = new Date();
+				Main.client.connection.sendGameUDP(NetworkID.CLIENT_GAMETIME_REQUEST, "" + d.time);
+			}
+			
+			if (!ready)
+			{
+				if (maxDifference < 50)
+				{
+					maxDifference += 1;
+				}
+				else if (maxDifference < 100)
+				{
+					maxDifference += 0.3;
+				}
+				else if (!ready)
+				{
+					client.switchGui(new GuiScreenLost("Ping to high! 150+ for more than 8 seconds"));
+				}
+			}
+			
 			if (Main.client.inWorld)
 			{
-				if (Main.client.world.gameTimeDifference > 0 && Main.client.world.gameTimeDifference < 100)
+				if (Main.client.world.gameTimeDifference > 0 && (Main.client.world.gameTimeDifference < maxDifference || Main.client.world.lowestPing < maxDifference))
 				{
 					if (!ready)
 					{

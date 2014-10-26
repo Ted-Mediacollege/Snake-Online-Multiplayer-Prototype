@@ -14,6 +14,9 @@ package nl.teddevos.snakemp.server.world
 		public var turn:int;
 		public var playing:Boolean;
 		public var speed:int;
+		
+		public var currentframes:int;
+		public var oldframes:int;
 		public var frame:int;
 		
 		public var clientManager:ClientManager;
@@ -63,6 +66,7 @@ package nl.teddevos.snakemp.server.world
 				}
 				
 				nextPickup();
+				c.score += 500;
 				Main.server.clientManager.sendGameUDP(c, NetworkID.SERVER_GROW_UDP, frame + "");
 				Main.server.clientManager.sendTCP(c, NetworkID.SERVER_GROW_TCP, frame + "");
 			}
@@ -96,11 +100,6 @@ package nl.teddevos.snakemp.server.world
 		
 		public function end():void
 		{
-			var l:int = clientManager.clients.length;
-			for (var i:int = 0; i < l; i++ )
-			{
-				clientManager.clients[i].resetVariables();
-			}
 		}
 	}
 }

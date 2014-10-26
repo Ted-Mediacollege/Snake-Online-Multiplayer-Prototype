@@ -19,6 +19,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		private var hosting:Boolean;
 		private var ready:Boolean = false;
 		private var button_ready:GuiButton;
+		private var ip_text:GuiText;
 		
 		public function GuiScreenLobby(host:Boolean, pl:String) 
 		{
@@ -27,7 +28,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			playerList = new GuiPlayerList();
 			playerList.update(pl);
 			playerList.x = 20;
-			playerList.y = 100;
+			playerList.y = 130;
 			addChild(playerList);
 			
 			chatbox = new GuiChat();
@@ -38,19 +39,32 @@ package nl.teddevos.snakemp.client.gui.screens
 		
 		override public function init():void
 		{
-			var title:GuiText = new GuiText(400, 20, 35, 0x000000, "center");
-			title.setText("Snake Multiplayer Lobby");
-			addChild(title);
+			if (hosting)
+			{
+				var title:GuiText = new GuiText(400, 20, 35, 0x000000, "center");
+				title.setText("Lobby - " + client.connection.serverName);
+				addChild(title);
+				
+				ip_text = new GuiText(400, 70, 20, 0x333333, "center");
+				ip_text.setText("Server running on ip: ?");
+				addChild(ip_text);
+			}
+			else
+			{
+				var title2:GuiText = new GuiText(400, 50, 35, 0x000000, "center");
+				title2.setText("Lobby - " + client.connection.serverName);
+				addChild(title2);
+			}
 			
 			client.addEventListener(ServerTCPdataEvent.DATA, onTCPdata);
 			client.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 			
-			button_ready = new GuiButton(1, 20, 515, 50, 150, 0xFF7777);
+			button_ready = new GuiButton(1, 20, 525, 50, 150, 0xFF7777);
 			button_ready.setText("Ready", 35, 0xFFFFFF);
 			buttonList.push(button_ready);
 			addChild(button_ready);
 			
-			var button_menu:GuiButton = new GuiButton(0, 190, 515, 50, 250, 0x777777);
+			var button_menu:GuiButton = new GuiButton(0, 190, 525, 50, 250, 0x777777);
 			button_menu.setText("Back to menu", 35, 0xFFFFFF);
 			buttonList.push(button_menu);
 			addChild(button_menu);
@@ -60,8 +74,15 @@ package nl.teddevos.snakemp.client.gui.screens
 		{ 
 			if (!Main.client.connection.socketTCP.connected)
 			{
-				Main.client.connection.kill();
 				client.switchGui(new GuiScreenLost("Lost connection to server!"));
+			}
+			
+			if (hosting)
+			{
+				if (Main.server.localIPfound)
+				{
+					ip_text.setText("Server running on ip: " + Main.server.localIP);
+				}
 			}
 		}
 		
@@ -69,13 +90,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		{ 
 			if (b.id == 0)
 			{
-				if (hosting)
-				{
-					Main.server.clientManager.sendQuickUDPtoAll(NetworkID.SERVER_END, "end");
-					Main.killServer();
-				}
-				client.connection.kill();
-				client.switchGui(new GuiScreenMenu());
+				client.switchGui(new GuiScreenKill(hosting));
 			}
 			else if (b.id == 1)
 			{
@@ -97,12 +112,10 @@ package nl.teddevos.snakemp.client.gui.screens
 			}
 			else if (e.id == NetworkID.SERVER_KICK && !hosting)
 			{
-				Main.client.connection.kill();
 				client.switchGui(new GuiScreenLost("You have been kicked by the host, Reason: " + e.data));
 			}
 			else if (e.id == NetworkID.SERVER_END && !hosting)
 			{
-				Main.client.connection.kill();
 				client.switchGui(new GuiScreenLost("Host quit the game!"));
 			}
 			else if (e.id == NetworkID.SERVER_PREPARE)

@@ -57,7 +57,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			if (b.id == 0)
 			{
 				SaveData.lastIP = inputField.tf.text;
-				client.switchGui(new GuiScreenJoinConnect(inputField.tf.text));
+				client.switchGui(new GuiScreenJoinConnect(inputField.tf.text, true));
 			}
 			if (b.id == 1)
 			{
@@ -70,7 +70,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			if (e.keyCode == Keyboard.ENTER)
 			{
 				SaveData.lastIP = inputField.tf.text;
-				client.switchGui(new GuiScreenJoinConnect(inputField.tf.text));
+				client.switchGui(new GuiScreenJoinConnect(inputField.tf.text, true));
 			}
 		}
 		

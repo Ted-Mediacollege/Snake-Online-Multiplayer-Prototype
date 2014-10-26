@@ -16,10 +16,12 @@ package nl.teddevos.snakemp.client.gui.screens
 		private var errorText:GuiText;
 		private var frameDelay:Boolean = false;
 		private var killed:Boolean = false;
+		private var direct:Boolean = false;
 		
-		public function GuiScreenJoinConnect(ip:String) 
+		public function GuiScreenJoinConnect(ip:String, d:Boolean) 
 		{
 			ipaddress = ip;
+			direct = d;
 		}
 		
 		override public function init():void
@@ -49,7 +51,7 @@ package nl.teddevos.snakemp.client.gui.screens
 				Main.client.connection.connect(ipaddress);
 			}
 
-			if (Main.client.connection.failed)
+			if (Main.client.connection.failed && !killed)
 			{
 				killed = true;
 				connectText.setText("Connection failed!");
@@ -66,7 +68,15 @@ package nl.teddevos.snakemp.client.gui.screens
 				{
 					client.connection.kill();
 				}
-				client.switchGui(new GuiScreenJoinInput(ipaddress));
+				
+				if (direct)
+				{
+					client.switchGui(new GuiScreenJoinInput(ipaddress));
+				}
+				else
+				{
+					client.switchGui(new GuiScreenServerList());
+				}
 			}
 		}
 		
@@ -74,7 +84,10 @@ package nl.teddevos.snakemp.client.gui.screens
 		{
 			if (e.id == NetworkID.SERVER_WELCOME)
 			{
-				client.connection.playerID = parseInt(e.data);
+				var q:Array = e.data.split("#");
+				client.connection.serverName = q[1];
+				client.connection.maxPlayers = int(parseInt(q[2]));
+				client.connection.playerID = parseInt(q[0]);
 				connectText.setText("Sending data...");
 				client.connection.sendTCP(NetworkID.CLIENT_INFO_UPDATE, SaveData.playerName + "");
 			}

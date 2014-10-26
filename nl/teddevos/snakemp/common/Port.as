@@ -12,5 +12,7 @@ package nl.teddevos.snakemp.common
 		
 		public static var PING_CLIENT:int = 2028;
 		public static var PING_SERVER:int = 2029;
+		
+		public static var TEST_UDP:int = 2030;
 	}
 }

@@ -18,6 +18,8 @@ package nl.teddevos.snakemp.client.network
 		public var failed:Boolean;
 		public var error:String = "";
 		
+		public var serverName:String = "";
+		public var maxPlayers:int = 8;
 		public var playerID:int;
 		public var address:String;
 		
@@ -62,7 +64,7 @@ package nl.teddevos.snakemp.client.network
 				
 				socketUDP_QUICK.bind(Port.QUICK_UDP_CLIENT);
 				socketUDP_QUICK.receive();
-				
+
 				Main.client.pingResponder.startPing(ip);
 			}
 			catch (e:Error)
@@ -76,9 +78,16 @@ package nl.teddevos.snakemp.client.network
 		
 		public function kill():void
 		{
-			socketTCP.close();
-			socketUDP_GAME.close();
-			socketUDP_QUICK.close();
+			try
+			{
+				socketTCP.close();
+				socketUDP_GAME.close();
+				socketUDP_QUICK.close();
+			}
+			catch (e:Error)
+			{
+				trace("failed to close some sockets");
+			}
 			Main.client.pingResponder.endPing();
 			connected = false;
 		}
@@ -92,6 +101,9 @@ package nl.teddevos.snakemp.client.network
 		{
 			connected = false;
 			kill();
+			trace("[CLIENT]: UDP ERROR");
+			error = "Failed to start udp connection";
+			failed = true;
 		}
 		
 		public function onIOError(e:IOErrorEvent):void
@@ -154,14 +166,17 @@ package nl.teddevos.snakemp.client.network
 		
 		public function tick():void
 		{
-			Main.client.pingResponder.tick();
-			
-			keepAlive--;
-			if (keepAlive < 0)
+			if (connected)
 			{
-				keepAlive = 60;
-				sendGameUDP(NetworkID.KEEP_ALIVE, "keep-alive");
-				sendQuickUDP(NetworkID.KEEP_ALIVE, "keep-alive");
+				Main.client.pingResponder.tick();
+				
+				keepAlive--;
+				if (keepAlive < 0)
+				{
+					keepAlive = 60;
+					sendGameUDP(NetworkID.KEEP_ALIVE, "keep-alive");
+					sendQuickUDP(NetworkID.KEEP_ALIVE, "keep-alive");
+				}
 			}
 		}
 		

@@ -34,7 +34,11 @@ package nl.teddevos.snakemp.server.network.client
 		public var posD:int;
 		public var death:Boolean;
 		
-		public function ClientConnection(s:Socket, id:int) 
+		public var score:int = 0;
+		public var deathFrame:int;
+		public var rank:int;
+		
+		public function ClientConnection(s:Socket, id:int, ra:int) 
 		{
 			socket = s;
 			socket.addEventListener(Event.CLOSE, onClientLost);
@@ -45,6 +49,7 @@ package nl.teddevos.snakemp.server.network.client
 			ping = 0;
 			
 			clientID = id;
+			rank = ra;
 			
 			remoteAdress = socket.remoteAddress;
 			disconnected = false;
@@ -108,8 +113,9 @@ package nl.teddevos.snakemp.server.network.client
 			{
 				loadReady = true;
 			}
-			else if (id == NetworkID.CLIENT_DEATH_TCP)
+			else if (id == NetworkID.CLIENT_DEATH_TCP && Main.server.clientManager.GAME)
 			{
+				score += Main.server.world.frame;
 				if (!death)
 				{
 					Main.server.clientManager.sendGameUDPtoAll(NetworkID.SERVER_PLAYER_DEATH_UDP, clientID + "", clientID);
@@ -117,7 +123,7 @@ package nl.teddevos.snakemp.server.network.client
 					death = true;
 				}
 			}
-			else if (id == NetworkID.CLIENT_PICKUPREQUEST_TCP)
+			else if (id == NetworkID.CLIENT_PICKUPREQUEST_TCP && Main.server.clientManager.GAME)
 			{
 				Main.server.world.checkPickup(clientID, message);
 			}
@@ -195,8 +201,6 @@ package nl.teddevos.snakemp.server.network.client
 			posY = 0;
 			posD = 0;
 			death = false;
-			
-			trace("RESET");
 		}
 	}
 }

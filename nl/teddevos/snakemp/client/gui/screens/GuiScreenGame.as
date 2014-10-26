@@ -22,13 +22,18 @@ package nl.teddevos.snakemp.client.gui.screens
 			client.addEventListener(ServerTCPdataEvent.DATA, onTCPdata);
 			
 			title = new GuiText(10, 10, 80, 0xBBBBBB, "left");
-			title.setText("" + int(Main.client.world.gameTime / Main.client.world.speed));
-			addChild(title);
+			title.setText("" + int(Main.client.world.frame));
+			//addChild(title);
 		}
 		
 		override public function tick():void 
 		{ 
-			title.setText("" + int(Main.client.world.gameTime / Main.client.world.speed));
+			if (!Main.client.connection.socketTCP.connected)
+			{
+				client.switchGui(new GuiScreenLost("Lost connection to server!"));
+			}
+			
+			title.setText("" + int(Main.client.world.frame));
 		}
 		
 		override public function action(b:GuiButton):void 
@@ -53,7 +58,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		{ 
 			removeChild(client.world);
 			client.removeEventListener(ServerTCPdataEvent.DATA, onTCPdata);
-			client.world.destroy();
+			Main.client.endWorld();
 		}
 	}
 }

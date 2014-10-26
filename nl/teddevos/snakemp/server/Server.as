@@ -1,9 +1,11 @@
 package nl.teddevos.snakemp.server 
 {
+	import flash.net.NetworkInterface;
 	import nl.teddevos.snakemp.server.network.client.ClientManager;
 	import nl.teddevos.snakemp.server.network.policy.PolicyManager;
 	import nl.teddevos.snakemp.server.data.ServerLog;
 	import nl.teddevos.snakemp.server.world.WorldServer;
+	import nl.teddevos.snakemp.server.network.serverlist.ServerListUpdater;
 	
 	public class Server 
 	{
@@ -13,16 +15,25 @@ package nl.teddevos.snakemp.server
 		public var world:WorldServer;
 		public var inWorld:Boolean;
 		
-		public function Server() 
+		public var lastServerListUpdate:int;
+		
+		public var serverName:String = "Server Name";
+		public var localIP:String = "127.0.0.1";
+		public var localIPfound:Boolean = false;
+		
+		public function Server(s:String) 
 		{
+			serverName = s;
 		}
 		
 		public function start():void
 		{
 			ServerLog.init();
 			ServerLog.addMessage("[SERVER]: starting server...");
+			localIPfound = false;
 			policyManager = new PolicyManager();
 			clientManager = new ClientManager();
+			lastServerListUpdate = -99;
 		}
 		
 		public function kill():void
@@ -57,6 +68,21 @@ package nl.teddevos.snakemp.server
 			if (inWorld)
 			{
 				world.tick();
+			}
+			
+			if (localIPfound)
+			{
+				var d:Date = new Date();
+				if (int(d.getMinutes()) != lastServerListUpdate)
+				{
+					if (lastServerListUpdate == -99)
+					{
+						ServerLog.addMessage("[SERVER]: Sending message to main server.");
+					}
+					lastServerListUpdate = int(d.getMinutes());
+					
+					ServerListUpdater.update();
+				}
 			}
 		}
 	}
