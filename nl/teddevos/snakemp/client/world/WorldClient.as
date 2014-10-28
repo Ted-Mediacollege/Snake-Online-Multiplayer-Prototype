@@ -10,7 +10,7 @@ package nl.teddevos.snakemp.client.world
 	
 	public class WorldClient extends Sprite
 	{
-		public var gameTimeDifference:int;
+		public var gameTimeDifference:int = 200;
 		public var gameTime:int;
 		private var time_old:int;
 		private var time:int;
@@ -266,10 +266,10 @@ package nl.teddevos.snakemp.client.world
 			}
 		}
 		
-		public function newGameTime(t:Number, time:Number):void
+		public function newGameTime(t:Number, time:Number, host:Boolean = false):void
 		{
 			var d:Date = new Date();
-			var p:Number = Number(d.time - time) / 2.0;
+			var p:Number = host ? 0 : Number(d.time - time) / 2.0;
 			
 			if (!ticking)
 			{

@@ -28,6 +28,13 @@ package nl.teddevos.snakemp.client.gui.screens
 			waitTime = false;
 			maxDifference = 1;
 			gametimeSpam = 10;
+			
+			if (hosting)
+			{
+				ready = true;
+				waitTime = true;
+				gametimeSpam = 10000;
+			}
 		}
 		
 		override public function init():void
@@ -41,7 +48,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			addChild(title);
 			
 			infoText = new GuiText(400, 310, 15, 0x000000, "center");
-			infoText.setText("Matching game time...");
+			infoText.setText("Waiting for other players.");
 			addChild(infoText);
 			
 			pingText = new GuiText(400, 750, 15, 0x000000, "center");
@@ -55,54 +62,57 @@ package nl.teddevos.snakemp.client.gui.screens
 			
 			if (hosting)
 			{
-				serverinfo = new GuiText(400, 600, 15, 0x000000, "center");
-				serverinfo.setText("");
-				addChild(serverinfo);
+				pingText.setText("Lowest ping: 0ms (you are hosting!)");
+				Main.client.world.newGameTime(Main.server.world.gameTime_current, 0, true);
+				Main.client.connection.sendTCP(NetworkID.CLIENT_GAMETIME_MATCH);
 			}
 		}
 		
 		override public function tick():void 
 		{ 
-			if (!Main.client.connection.socketTCP.connected)
+			if (!hosting)
 			{
-				client.switchGui(new GuiScreenLost("Lost connection to server!"));
-			}
-			
-			pingText.setText("Lowest ping: " + int(Main.client.world.lowestPing) + "ms");
-			
-			gametimeSpam--;
-			if (gametimeSpam < 0)
-			{
-				gametimeSpam += 15;
-				var d:Date = new Date();
-				Main.client.connection.sendGameUDP(NetworkID.CLIENT_GAMETIME_REQUEST, "" + d.time);
-			}
-			
-			if (!ready)
-			{
-				if (maxDifference < 50)
+				if (!Main.client.connection.socketTCP.connected)
 				{
-					maxDifference += 1;
+					client.switchGui(new GuiScreenLost("Lost connection to server!"));
 				}
-				else if (maxDifference < 100)
+				
+				pingText.setText("Lowest ping: " + int(Main.client.world.lowestPing) + "ms");
+				
+				gametimeSpam--;
+				if (gametimeSpam < 0)
 				{
-					maxDifference += 0.3;
+					gametimeSpam += 15;
+					var d:Date = new Date();
+					Main.client.connection.sendGameUDP(NetworkID.CLIENT_GAMETIME_REQUEST, "" + d.time);
 				}
-				else if (!ready)
+				
+				if (!ready)
 				{
-					client.switchGui(new GuiScreenLost("Ping to high! 150+ for more than 8 seconds"));
-				}
-			}
-			
-			if (Main.client.inWorld)
-			{
-				if (Main.client.world.gameTimeDifference > 0 && (Main.client.world.gameTimeDifference < maxDifference || Main.client.world.lowestPing < maxDifference))
-				{
-					if (!ready)
+					if (maxDifference < 50)
 					{
-						Main.client.connection.sendTCP(NetworkID.CLIENT_GAMETIME_MATCH);
-						infoText.setText("Waiting for other players.");
-						ready = true;
+						maxDifference += 1;
+					}
+					else if (maxDifference < 100)
+					{
+						maxDifference += 0.3;
+					}
+					else if (!ready)
+					{
+						client.switchGui(new GuiScreenLost("Ping to high! 150+ for more than 8 seconds"));
+					}
+				}
+				
+				if (Main.client.inWorld)
+				{
+					if (Main.client.world.gameTimeDifference > -1 && (Main.client.world.gameTimeDifference < maxDifference || Main.client.world.lowestPing < maxDifference))
+					{
+						if (!ready)
+						{
+							Main.client.connection.sendTCP(NetworkID.CLIENT_GAMETIME_MATCH);
+							infoText.setText("Waiting for other players.");
+							ready = true;
+						}
 					}
 				}
 			}

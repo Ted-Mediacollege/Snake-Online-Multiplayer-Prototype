@@ -24,7 +24,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			addChild(title);
 			
 			var version:GuiText = new GuiText(730, 770, 15, 0x000000, "center");
-			version.setText("Version 1.1 final");
+			version.setText("Version 1.2 final");
 			addChild(version);
 			
 			var info:GuiText = new GuiText(400, 150, 15, 0x000000, "center");
