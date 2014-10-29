@@ -15,6 +15,7 @@ package nl.teddevos.snakemp.client.gui.screens
 		private var connectText:GuiText;
 		private var inputField:GuiTextInput;
 		private var connecting:Boolean;
+		private var button_host:GuiButton;
 		
 		public function GuiScreenJoinHosting() 
 		{
@@ -43,7 +44,7 @@ package nl.teddevos.snakemp.client.gui.screens
 			graphics.lineStyle(3, 0x000000);
 			graphics.drawRect(225, 340, 350, 40);
 			
-			var button_host:GuiButton = new GuiButton(1, 275, 440, 50, 250, 0x555555);
+			button_host = new GuiButton(1, 275, 440, 50, 250, 0x555555);
 			button_host.setText("Host Game", 35, 0xFFFFFF);
 			buttonList.push(button_host);
 			addChild(button_host);
@@ -82,6 +83,11 @@ package nl.teddevos.snakemp.client.gui.screens
 					inputField.tf.text = SaveData.playerName + " server";
 					SaveData.serverName = inputField.tf.text;
 				}
+				
+				button_host.enabled = false;
+				removeChild(button_host);
+				removeChild(inputField);
+				graphics.clear();
 				
 				connectText.setText("Creating server... ");		
 				Main.startServer(inputField.tf.text);
